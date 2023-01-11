@@ -1,6 +1,8 @@
 import React, { Component } from "react";
 import axios from "axios";
 import "./JokeList.css";
+import Joke from "../Joke/Joke";
+import { v1 } from "uuid";
 
 class JokeList extends Component {
   static defaultProps = {
@@ -18,9 +20,16 @@ class JokeList extends Component {
           Accept: "application/json",
         },
       });
-      jokes.push(response.data.joke);
+      jokes.push({ id: v1(), text: response.data.joke, votes: 0 });
     }
     this.setState({ jokes: jokes });
+  }
+  handleVotes(id, change) {
+    this.setState((st) => ({
+      jokes: st.jokes.map((j) =>
+        j.id === id ? { ...j, votes: j.votes + change } : j
+      ),
+    }));
   }
   render() {
     return (
@@ -37,7 +46,13 @@ class JokeList extends Component {
         </div>
         <div className="JokeList-jokes">
           {this.state.jokes.map((j) => (
-            <div>{j}</div>
+            <Joke
+              key={j.id}
+              votes={j.votes}
+              text={j.text}
+              upvote={() => this.handleVotes(j.id, 1)}
+              downvote={() => this.handleVotes(j.id, -1)}
+            />
           ))}
         </div>
       </div>
