@@ -14,30 +14,43 @@ class JokeList extends Component {
       jokes: JSON.parse(window.localStorage.getItem("jokes") || "[]"),
       loading: false,
     };
+    this.seenJokes = new Set(this.state.jokes.map((j) => j.text));
+    console.log(this.seenJokes);
     this.handleClick = this.handleClick.bind(this);
   }
   componentDidMount() {
     if (this.state.jokes.length === 0) this.getJokes();
   }
   async getJokes() {
-    let jokes = [];
-    while (jokes.length < this.props.jokesNumber) {
-      let response = await axios.get("https://icanhazdadjoke.com/", {
-        headers: {
-          Accept: "application/json",
-        },
-      });
-      jokes.push({ id: v1(), text: response.data.joke, votes: 0 });
+    try {
+      let jokes = [];
+      while (jokes.length < this.props.jokesNumber) {
+        let response = await axios.get("https://icanhazdadjoke.com/", {
+          headers: {
+            Accept: "application/json",
+          },
+        });
+        let newJoke = response.data.joke;
+        if (!this.seenJokes.has(newJoke)) {
+          jokes.push({ id: v1(), text: newJoke, votes: 0 });
+        } else {
+          console.log("FOUND A DUPLICATE");
+          console.log(newJoke);
+        }
+      }
+      this.setState(
+        (st) => ({
+          loading: false,
+          jokes: [...st.jokes, ...jokes],
+        }),
+        () =>
+          window.localStorage.setItem("jokes", JSON.stringify(this.state.jokes))
+      );
+      window.localStorage.setItem("jokes", JSON.stringify(jokes));
+    } catch (e) {
+      alert(e);
+      this.setState({ loading: false });
     }
-    this.setState(
-      (st) => ({
-        loading: false,
-        jokes: [...st.jokes, ...jokes],
-      }),
-      () =>
-        window.localStorage.setItem("jokes", JSON.stringify(this.state.jokes))
-    );
-    window.localStorage.setItem("jokes", JSON.stringify(jokes));
   }
   handleVotes(id, change) {
     this.setState(
@@ -51,11 +64,10 @@ class JokeList extends Component {
     );
   }
   handleClick() {
-    
-    this.setState({loading: true}, this.getJokes);
+    this.setState({ loading: true }, this.getJokes);
   }
   render() {
-    if(this.state.loading){
+    if (this.state.loading) {
       return (
         <div className="JokeList-spinner">
           <i className="far fa-8x fa-laugh fa-spin" />
